@@ -1,0 +1,47 @@
+install.packages("devtools")
+library(devtools)
+
+install_github("rga", "skardharmar")
+library(rga)
+
+# if instance is not already open use this:
+# rga.open(instance="ga")
+
+rga.open(instance="ga", where="~/ga.rga")
+
+start.date <- '2014-11-01'
+end.date <- '2014-11-30'
+test <- ga$getData(ids = 'ga:68630222', start.date = start.date, end.date = end.date, 
+           metrics = "ga:goal1Completions , ga:avgSessionDuration, ga:users",  dimensions = "ga:date", 
+           sort = "", filters = "ga:sourceMedium == The Raise Marketplace / email", segment = "",
+           start = 1, max = 1000)
+
+# Change column names
+colnames(test) <- c("date","gc", "sd", "u")
+
+# Plot and regression line
+plot(gc~sd, data = test)
+abline(lm(gc ~ sd, data = test))
+
+# Scatterplot Matrix
+pairs(test[2:4], pch = 19)
+
+ 
+write.csv(test, file = "ga.csv")
+
+
+
+
+# Use below in R, will crash RStudio:
+
+#ga <- read.csv("ga.csv", header = TRUE)
+
+#require(rgl)
+
+#with(ga, 
+     #plot3d(gc, sd, u,
+            #xlab = "goals",
+            #ylab = "sessiontime",
+            #zlab = "users",
+            #type = 'p',
+            #size = 8, col = "blue"))
