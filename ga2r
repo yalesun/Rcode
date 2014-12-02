@@ -1,0 +1,20 @@
+install_github("rga", "skardharmar")
+library(rga)
+
+startdate <- "2014-11-12"
+enddate <- "2014-11-26"
+rga.open(instance='ga')
+
+visits <- ga$getData(
+          ids = "ga:68630222",
+           start.date = startdate,
+           end.date = enddate, 
+           metrics = "ga:users",
+           dimensions = "ga:date",
+           sort= "ga:date", 
+           filters = "ga:country == United States"
+           )
+visits
+
+write.csv(visits, file = "visits.csv", row.names = FALSE)
+
