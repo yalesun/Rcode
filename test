@@ -1,0 +1,6 @@
+start.date <- '2014-11-01'
+end.date <- '2014-11-30'
+test <- ga$getData(ids = 'ga:68630222', start.date = start.date, end.date = end.date, 
+           metrics = "ga:goal1Completions , ga:avgSessionDuration, ga:users",  dimensions = "ga:date", 
+           sort = "", filters = "ga:sourceMedium == The Raise Marketplace / email", segment = "",
+           start = 1, max = 1000)
