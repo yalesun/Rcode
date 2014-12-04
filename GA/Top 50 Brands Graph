@@ -1,0 +1,229 @@
+install.packages("devtools")
+library(devtools)
+
+install_github("rga", "skardharmar")
+library(rga)
+
+require(grid)
+install.packages("gridExtra")
+require(gridExtra)
+
+require(ggplot2)
+
+rga.open(instance="ga")
+
+
+
+
+
+pd <- ga$getData(ids = 'ga:68630222', 
+                 batch = TRUE,
+                 start.date = '2014-11-01', 
+                 end.date = '2014-11-30', 
+                   metrics = "ga:itemQuantity , ga:itemRevenue",
+                 dimensions = "ga:productName, ga:sourceMedium", 
+                   sort = "", 
+                 filters = "ga:sourceMedium == (direct) / (none),ga:sourceMedium == The Raise Marketplace / email",
+                 segment = "",
+                   start = 1, max = 5000)
+
+
+
+
+# create frequency table
+#test <- rep(pd$productName, pd$itemQuantity)
+# make into table
+#testtable <- table(test)
+# print table
+#testtable
+
+# filter out segments
+test1 <- subset(pd, sourceMedium == "The Raise Marketplace / email")
+# works, rename:
+ed <- test1
+row.names(ed) <- NULL
+# remove test
+rm(test1)
+
+# direct
+dd <- subset(pd, sourceMedium == "(direct) / (none)")
+row.names(dd) <- NULL
+
+# frequency tables
+
+edf <- rep(ed$productName, ed$itemQuantity)
+edft <- table(edf)
+edft
+
+plot(edft)
+# convert to data frame
+testdf <- as.data.frame(edft)
+gedf <- testdf
+rm(testdf)
+
+
+# TESTING
+ddf <- rep(dd$productName, dd$itemQuantity)
+ddft <- table(ddf)
+ddft
+
+plot(ddft)
+gddf <- as.data.frame(ddft)
+
+
+
+plot(edft)
+plot(ddft) # too many labels, need to narrow it down
+
+# sort by decreasing TEST
+#e <- sort(gedf$Freq, decreasing = TRUE)
+#e
+
+#etop <- head(e, 100)
+#etop
+
+
+#d <- sort(ddft, decreasing = TRUE)
+#dtop <- head(d,100)
+
+# These don't work
+
+
+# Resume, creating new table standardized
+
+brands <- unique(pd$productName, incomparables = FALSE)
+brands
+branddata <- as.data.frame(brands)
+
+
+colnames(gedf) <- c("brands", "efreq")
+colnames(gddf) <- c("brands", "dfreq")
+
+# not needed
+#branddata[,efreq] <- NA
+#efreq <- "efreq"
+#branddata[, efreq] <- NA
+#branddata[, "dfreq"] <- NA
+
+# doing vlookup 
+base1 <- (merge(gedf, branddata, by = "brands"))
+base2 <- (merge(gddf, base1, by = "brands"))
+
+# why is this here?
+#colnames(branddata) <- c("brands", "efreq", "dfreq")
+
+
+colnames(base2) <- c("brands", "dfreq", "efreq")
+
+
+bd <- base2[,1:3]
+
+aov(efreq ~ dfreq, data = bd)
+
+emails <- bd$efreq
+direct <- bd$dfreq
+
+# trying out different tests here
+#var(emails)
+#var(direct)
+
+#plot(emails)
+#plot(direct)
+
+#boxplot(direct, emails)
+#t.test(emails, direct, paired = TRUE)
+#require(psych)
+#describe(bd)
+
+
+# How to order the rows
+emails1 <- bd[,c(1,3)]
+direct1 <- bd[,c(1:2)]
+
+# makes index array
+otest <- order(emails1$efreq, decreasing = TRUE)
+
+# uses rows to sort, emails only. 
+sorted_e = emails1[otest,]
+row.names(sorted_e) <- NULL 
+
+# merge direct on to emails
+comp_e <- sorted_e[1:50, ]
+test_e <- (merge(direct1, comp_e, by = "brands"))
+plot(test_e)
+
+# run some tests
+t.test(test_e$efreq, test_e$dfreq, paired = TRUE)
+barplot(test_e$efreq, test_e$dfreq, horiz = TRUE )
+
+
+# make new data frame without levels
+cleantest <- droplevels(test_e)
+
+# assign segments to clean dataframe
+fe <- cleantest[, c("brands", "efreq")]
+fd <- cleantest[, c("brands", "dfreq")]
+
+# frequency tables for each
+fef <- rep(fe$brands, fe$efreq)
+plot(fef)
+fdf <- rep(fd$brands, fd$dfreq)
+plot(fdf)
+
+# how to bar chart with one segment
+ggplot(data = fe, aes(x = brands, y = efreq)) + geom_bar(stat='identity')
+
+# then how to add column, segment name
+fe[, "group"] <- "email"
+colnames(fe) <- c("brand", "quantity", "group")
+fd[, "group"] <- "direct"
+colnames(fd) <- c("brand", "quantity", "group")
+
+# then how to combine
+all <- rbind(fe, fd)
+
+
+# then how to bar chart with groupings and label rotation with axis titles
+plot <- (ggplot(data = all, aes(x = brand, y = quantity, fill = group))
+  + geom_bar(stat = 'identity', position = position_dodge()) 
+  + theme(axis.text.x = element_text(angle = 90, vjust = 1))
+  + labs(title = "Top 50 Brands by Group", x = "Brand", y = "Quantity Bought")
+  )
+          
+plot
+
+
+# proportions
+feprop <- prop.table(fe$quantity)
+pbrands <- fe$brand
+pprop <- feprop
+pgroup <- fe$group
+eprop <- data.frame(pbrands, pprop, pgroup)
+colnames(eprop) <- c("brand", "percent", "group")
+
+
+fdprop <- prop.table(fd$quantity)
+dbrands <- fd$brand
+dprop <- fdprop
+dgroup <- fd$group
+ddprop <- data.frame(dbrands, dprop, dgroup)
+colnames(ddprop) <- c("brand", "percent", "group")
+
+props <- rbind(eprop, ddprop)
+
+# switch the levels, coming out backwards
+levels(props$group)
+props$group <- factor(props$group, levels = rev(levels(props$group)))
+levels(props$group)
+
+pplot <- (ggplot(data = props, 
+                 aes(x = brand, y = percent, fill = group))
+         + geom_bar(stat = 'identity', position = position_dodge())
+         + theme(axis.text.x = element_text(angle = 90, vjust = 1))
+         + labs(title = "Top 50 Brands by Group %", x = "Brand", y = "% Bought")
+         )
+
+pplot
+
+
+grid.arrange(plot, pplot)
