@@ -1,0 +1,4 @@
+drv = dbDriver("MySQL")
+con = dbConnect(drv, user="xxxxxxxxxx", password = "xxxxxxxxxx", dbname="xxxxxxxxxxxxxxxx",
+                host="xxxxxxxxxxxxxxxxxxxxxxxx")
+user_purchase = dbGetQuery(con, "query here")
