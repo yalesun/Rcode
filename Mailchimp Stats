@@ -1,0 +1,76 @@
+data <- read.csv("Mailchimpn.csv", header = TRUE)
+
+
+agg <- function(x){
+  dsplit <- split(x, x$Cohort)
+  dstat <- lapply(dsplit, function(y) colMeans(y[,c('Open.Rate', 'Click.rate', 'Ecommerce', 'Recipients')]))
+  dstat <- as.data.frame(dstat)
+  #dstat <- t(dstat)
+  dstat
+}
+
+open <- function(x){
+  #x <- t(x)
+  vector <- ncol(x)
+  for(i in 1:vector) {
+    opens <- x[1,i]
+    recip <- x[4,i]
+    vector[i] <- opens*recip
+    
+  }
+  dataframe <- rbind(x, vector)
+  
+}
+
+value <- function(x){
+  vector2 <- ncol(x)
+  for(i in 1:vector2) {
+    recip <- x[5,i]
+    ecom <- x[3,i]
+    vector2[i] <- ecom/recip
+    
+  }
+  dataframe <- rbind(x, vector2)
+}
+
+
+cleanup <- function(x) {
+  x[complete.cases(x),]
+}
+
+
+
+#df <- as.data.frame(f1(data))
+#df1 <- as.data.frame(f2(df))
+#df2 <- as.data.frame(f3(df1))
+#df3 <- as.data.frame(t(df2))
+#df4 <- as.data.frame(cleanup(df3))
+
+#colnames(df4) <- c('openrate', 'clickrate', 'ecommerce', 'recipients', 'opens', 'value')
+#df5 <- round(df4, 2)
+
+#df5
+
+
+
+
+run <- function(x) {
+  y <- agg(x)
+  z <- open(y)
+  a <- value(z)
+  b <- t(a)
+  c <- cleanup(b)
+  colnames(c) <- c('openrate', 'clickrate', 'ecommerce', 'recipients', 'opens', 'value')
+  d <- round(c, 2)
+}
+
+
+
+
+tues <- subset(data, data$Day == 'Tuesday')
+fri <- subset(data, data$Day == 'Friday')
+
+Tuesday <- as.data.frame(run(tues))
+Friday <- as.data.frame(run(fri))
+
+Total <- as.data.frame(run(data))
